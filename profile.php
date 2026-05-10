@@ -1,99 +1,21 @@
 ﻿<?php
-session_start();
- if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
-    exit();
-}
- 
-$conn = mysqli_connect('localhost', 'root', '', 'socksstore_db');
-if (!$conn) {
-    die('Database connection failed: ' . mysqli_connect_error());
-}
- 
-$userId = (int) $_SESSION['user_id'];
- 
-$result = mysqli_query($conn, "SELECT user_id, name, email, password FROM users WHERE user_id=$userId LIMIT 1");
-$u = mysqli_fetch_assoc($result);
- 
-if (!$u) {
-    session_destroy();
-    header('Location: login.php');
-    exit();
-}
- 
-$nameParts = explode(' ', trim($u['name']), 2);
-$firstName = $nameParts[0] ?? '';
-$lastName  = $nameParts[1] ?? '';
- 
-$successMsg = '';
-$errorMsg   = '';
- 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
- 
-    if ($action === 'personal') {
-        $fn = trim($_POST['firstName'] ?? '');
-        $ln = trim($_POST['lastName']  ?? '');
- 
-        if (!$fn || !$ln) {
-            $errorMsg = 'Please enter your full name.';
-        } else {
-            $fullName = mysqli_real_escape_string($conn, $fn . ' ' . $ln);
-            mysqli_query($conn, "UPDATE users SET name='$fullName' WHERE user_id=$userId");
- 
-            $_SESSION['user_name'] = $fn . ' ' . $ln;
- 
-            $result = mysqli_query($conn, "SELECT user_id, name, email, password FROM users WHERE user_id=$userId LIMIT 1");
-            $u = mysqli_fetch_assoc($result);
-            $nameParts = explode(' ', trim($u['name']), 2);
-            $firstName = $nameParts[0] ?? '';
-            $lastName  = $nameParts[1] ?? '';
-            $successMsg = 'Name updated successfully!';
-        }
-    }
- 
-    if ($action === 'account') {
-        $email = trim($_POST['email']       ?? '');
-        $pass1 = $_POST['password']         ?? '';
-        $pass2 = $_POST['password_confirm'] ?? '';
- 
-        if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errorMsg = 'Please enter a valid email address.';
-        } elseif ($pass1 && strlen($pass1) < 8) {
-            $errorMsg = 'Password must be at least 8 characters.';
-        } elseif ($pass1 && $pass1 !== $pass2) {
-            $errorMsg = 'Passwords do not match.';
-        } else {
-            $emailSafe = mysqli_real_escape_string($conn, $email);
- 
-            $check = mysqli_query($conn, "SELECT user_id FROM users WHERE email='$emailSafe' AND user_id != $userId LIMIT 1");
-            if (mysqli_fetch_assoc($check)) {
-                $errorMsg = 'That email is already used by another account.';
-            } else {
-                if ($pass1) {
-                    $hashed = mysqli_real_escape_string($conn, password_hash($pass1, PASSWORD_DEFAULT));
-                    mysqli_query($conn, "UPDATE users SET email='$emailSafe', password='$hashed' WHERE user_id=$userId");
-                } else {
-                    mysqli_query($conn, "UPDATE users SET email='$emailSafe' WHERE user_id=$userId");
-                }
- 
-              
-                $result = mysqli_query($conn, "SELECT user_id, name, email, password FROM users WHERE user_id=$userId LIMIT 1");
-                $u = mysqli_fetch_assoc($result);
-                $successMsg = 'Account updated successfully!';
-            }
-        }
-    }
-}
- 
-// ── Helpers ──────────────────────────────────────────────────────
-function initials($first, $last) {
-    return strtoupper(substr($first, 0, 1) . substr($last, 0, 1));
-}
-function esc($v) {
-    return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8');
-}
+
+$conn = mysqli_connect("localhost", "root", "", "socksstore_db");
+
+$id = 1;
+
+$sql = "SELECT * FROM users WHERE user_id=$id";
+
+$result = mysqli_query($conn,$sql);
+
+$row = mysqli_fetch_assoc($result);
+
 ?>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Profile</title>
 
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap');
